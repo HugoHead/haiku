@@ -42,9 +42,8 @@ has	Verb	1598	-	5051.0	2708
 that	DetP	14252	+	213613.5	2581
 will	VMod	1890	-	1698.5	2537
 would	VMod	3278	+	2223.9	2467
-her*	Det	644	-	16899.4	2362
+her	Det	644	-	16899.4	2362
 there	Ex	4067	+	9288.2	2354
-n't	Neg	12212	+	177089.3	2300
 all	DetP	3644	+	6115.9	2297
 can	VMod	3588	+	6572.3	2211
 if	Conj	4544	+	18764.4	2118
@@ -53,7 +52,6 @@ said	Verb	2685	+	1838.7	2018
 do	Verb	9594	+	126017.2	2016
 what	DetP	7313	+	75414.2	1936
 as	Prep	916	-	5727.7	1873
-'s	Verb	17677	+	384464.6	1848
 one	Num	3034	+	5910.9	1839
 its	Det	338	-	17017.0	1782
 into	Prep	1067	-	2560.1	1700
@@ -115,7 +113,7 @@ know	Verb	5550	+	104930.3	734
 year	NoC	803	+	65.1	730
 own	DetP	443	-	1198.6	724
 still	Adv	739	+	7.2	715
-because*	Conj	2039	+	14376.4	715
+because	Conj	2039	+	14376.4	715
 too	Adv	629	-	89.0	710
 get	Verb	3464	+	46650.2	709
 good	Adj	1566	+	6955.6	706
@@ -152,9 +150,8 @@ never	Adv	700	+	387.4	542
 where	Adv	1380	+	8075.1	541
 each	DetP	243	-	1947.3	539
 again	Adv	836	+	1381.6	529
-found*	Verb	209	-	2304.7	521
+found	Verb	209	-	2304.7	521
 Mr	NoC	565	+	37.2	519
-'	Gen	141	-	3704.0	518
 part	NoC	355	-	510.2	512
 say	Verb	2116	+	24125.8	512
 house	NoC	460	-	40.4	506
@@ -166,7 +163,7 @@ out of	Prep	497	+	0.9	490
 in	Adv	1307	+	8310.9	488
 number	NoC	531	+	34.3	488
 without	Prep	227	-	1611.1	483
-going*	Verb	2174	+	27109.0	482
+going	Verb	2174	+	27109.0	482
 different	Adj	500	+	6.8	482
 children	NoC	367	-	261.2	477
 system	NoC	189	-	2141.5	476
