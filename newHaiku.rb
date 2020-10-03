@@ -1,3 +1,7 @@
+require './lib/VowlCheck.rb'
+
+beginning = Time.now
+
 class Data
     attr_accessor :arrays, :col0, :col1, :col2, :col3 
     def computeCols
@@ -22,69 +26,103 @@ class Data
     end
 end
 
-def findSylCount word, data
-    col1 = data.map {|row| row[0]}.to_a
-    col2 = data.map {|row| row[3]}.to_a
-    table = Hash[col1.zip(col2)]
-
-    return table[word].to_i
+def findSylCount word
+    return $sylsLookupTable[word].to_i
 end
 
 def wordPlacement line, data, sylLeft
+    #check to see if words are plaeced properly
     if line == ""
         return false
     end
 
     lineArr = line.split(" ")
 
-    col1 = data.map {|row| row[0]}.to_a
-    col2 = data.map {|row| row[1]}.to_a
-    table = Hash[col1.zip(col2)]
+    table = Hash[$col[0].zip($col[1])]
 
     totalSyl = 0
 
+    #check to see if the lsat word is a determiner
+    #this way, the program does not hang as there are no sylalles left,
+    #but it is not grammatical either because the determiner does not have a noun
     if sylLeft <= 0 && table[lineArr.last] == "Det"
         return false
     end
 
     lineArr.length.times do |n|
+        thisWord = $col[0][n]
+        prevWord = $col[0][n - 1]
+
+        thisWordPrt = table[lineArr[n]]
+        prevWordPrt = table[lineArr[n - 1]]
+
+        ################################################################################
+        #ensure that there are not two of the same word right next to one another.
+        #ideally, this would never happen if all the proper grammer rules are followed.
+        #however, this will save a little computation and act as a safty net
+        #the exeption is of cource adjectives and adverbs 
+        #e.g. "stupid stupid old man", "very very big ball"
+        if (thisWord == prevWord) && (thisWordPrt != "Adj" || thisWordPrt != "Adv")
+            puts "DOUBLE WORD INSTANCE REMOVED"
+            return false
+        end
+        ##############################################################################
+
         if n != 0
-            if table[lineArr[n - 1]] == "Det"
-                if table[lineArr[n]] != "NoC" and table[lineArr[n]] != "Adj"and table[lineArr[n]] != "Adv"
+            if prevWordPrt == "Det"
+                if thisWordPrt != "NoC" and thisWordPrt != "Adj"and thisWordPrt != "Adv"
                     return false
                 end
-            elsif table[lineArr[n - 1]] == "Adj"
-                if table[lineArr[n]] != "NoC" and table[lineArr[n]] != "Pron" and table[lineArr[n]] != "NoP"
+            elsif prevWordPrt == "Adj"
+                if thisWordPrt != "NoC" and thisWordPrt != "Pron" and thisWordPrt != "NoP"
                     return false
                 end
             end
         end
-    end   
+    end
+
     return true
 end
 
-def drawWord data
-    totalFeq = 0
-    data.length.times do |n|
-        totalFeq += data[n].split("\t")[2].to_i
-    end
-    
+def minorCorrection line
+    vowelCheck = VowelCheck.new
 
-    col1 = data.map {|row| row.split("\t")[0]}.to_a
-    col2 = data.map {|row| row.split("\t")[2]}.to_a
-
-    table = Hash[col1.zip(col2)]
-
-    raffle = []
-
-    #puts table
-
-    table.map do |word, freq|
-        freq.to_i.times { raffle << word }
+    if line == ""
+        return line
     end
 
-    value = raffle.sample
-    value = data[col1.index(value)]
+    lineArr = line.split(" ")
+
+    if lineArr.length == 1 or lineArr.length == 0
+        return line
+    end
+
+    if lineArr.include? ("a")
+        if lineArr.index("a") == lineArr.length + 1
+            return line
+        elsif lineArr.index("a") == lineArr.length
+            if vowelCheck.startsWithAVowel(lineArr.last)
+                lineArr[lineArr.index("a")] = "an"
+                return lineArr.join(" ")
+            end
+        end
+    end
+    if lineArr.include? ("an")
+        if lineArr.index("an") == lineArr.length + 1
+            return line
+        elsif lineArr.index("an") == lineArr.length
+            if vowelCheck.startsWithAVowel(lineArr.last)
+                lineArr[lineArr.index("an")] = "a"
+                return lineArr.join(" ")
+            end
+        end
+    end
+
+    return line
+end
+def drawWord
+    #randomly pick a word. Weighted on frequency.
+    value = $listOfWordsWeightedOnFrequency.sample#Note that this function will return an int
     return value
 
     puts "err: drawWord escaped"
@@ -92,87 +130,98 @@ end
 
 def makeLine syls, syl2, syl
     #more setup:
-    fline = ''
-    rSylFline = syls #remaining syllables in the first line.
+    line = ''
+    rSylLine = syls #remaining syllables in the first line.
 
     #build the Fline (first line) of the haiku
     sylNum = 3
     word = 0
-    fline = ""
+    line = ""
     selectedWord = ""
 
     grammer = false
-    while rSylFline != 0 || grammer
-        if grammer && fline != "" && rSylFline != 5
-            lastWord = fline.split(' ').last
-            fline = fline.split(' ')[0...-1].join(' ') + " "
-            rSylFline += findSylCount(lastWord, syl2)
+    while rSylLine != 0 || grammer
+        #if either the line is incomplete of ingrammatical, 
+        #we need to keep working on it
+
+        #below is a check if the line is not gramatical
+        #all other checks prevents edgecases
+        if grammer && line != "" && rSylLine != syls
+            #find the last word in line
+            lastWord = line.split(' ').last
+            #remove it
+            line = line.split(' ')[0...-1].join(' ') + " "
+            #add its sylablle counts back into the remaining sylablles
+            rSylLine += findSylCount lastWord
         end
 
-        selectedWord = drawWord (syl)
-        selectedWord = selectedWord.split("\t")
-        if rSylFline >= selectedWord[sylNum].to_i
-            fline = fline + selectedWord[word].to_s + " "
-            rSylFline = rSylFline - selectedWord[sylNum].to_i
+        #pick a word randomly.
+        selectedWord = drawWord.to_s
+        #find the sylablle count
+        sylsInSelectedWord = findSylCount selectedWord
+
+        #check to see if the word is too large to fit the line
+        if rSylLine >= sylsInSelectedWord
+            #If not, add the word to the end of the line.
+            line = line + selectedWord + " "
+            #reduce the number of sylablles remaining in the line accordingly
+            rSylLine = rSylLine - sylsInSelectedWord
         end
 
-        grammer = !wordPlacement(fline, syl2, rSylFline)
+        #determine wheather or not the sentence is grammatical for later use.
+        grammer = !wordPlacement(line, syl2, rSylLine)
+        #tweak the line for minor rules
+        line = minorCorrection line
     end
-    return fline
+    #There my be an extra " " at the end of the line. Get that outta there.
+    return line.chomp(" ") + "."#<-- punctutation is integral to human comminication.
 end
 
+#MAIN STARTS HERE
 
-syl = File.open("finalData.txt", "r")#copies the File syl.txt to the var syl
-syl = syl.each_line.to_a#makes syl an array
-rand = rand(0..syl.length)#gets random # from 0 to the length of syl
+#copies the File syl.txt to the var syl
+syl = File.open("finalData.txt", "r")
+#makes syl an array
+syl = syl.each_line.to_a
+#gets random # from 0 to the length of syl
+rand = rand(0..syl.length)
+
 runner = 0
 syl2 = Array.new
-while runner < syl.length do#repeat until nothing left in syl
-    syl2[runner] = syl[runner].split("\t")#makes each index of syl2 and array of [word, syl_count]
+#repeat until nothing left in syl
+while runner < syl.length do
+    #makes each index of syl2 and array of [word, syl_count]
+    syl2[runner] = syl[runner].split("\t")
     runner = runner + 1
 end
 
-#$data = Data.new 
+#############################################
+#igore how many global variables I am using
+col0 = syl2.map {|row| row[0]}.to_a
+col1 = syl2.map {|row| row[1]}.to_a
+col2 = syl2.map {|row| row[2]}.to_a
+col3 = syl2.map {|row| row[3]}.to_a
 
+$col = [col0, col1, col2, col3]
 
-
-=begin
-#more setup:
-sline = '' 
-rSylSline = 7 #remaining syllables in the first line.
-
-#build the Sline (second line) of the haiku
-word = 0
-while rSylSline != 0 
-    syl2[rand][sylNum]
-    if rSylSline >= syl2[rand][sylNum].to_i
-        sline = sline + syl2[rand][0].to_s + " "
-        rSylSline = rSylSline - syl2[rand][sylNum].to_i
-    end
-    rand = rand(0..syl.length)
+table = Hash[$col[0].zip($col[2])]
+$listOfWordsWeightedOnFrequency = []
+table.map do |word, freq|
+    freq.to_i.times { $listOfWordsWeightedOnFrequency << word }
 end
 
+$sylsLookupTable = Hash[$col[0].zip($col[3])]
+#############################################
 
-tline = '' 
-rSylTline = 5 #remaining syllables in the first line.
+beginning = Time.now
+100000.times do 
+    fline = makeLine 5, syl2, syl
+    sline = makeLine 7, syl2, syl
+    tline = makeLine 5, syl2, syl
 
-#build the Tline (third line) of the haiku
-word = 0
-while rSylTline != 0 
-    syl2[rand][sylNum]
-    if rSylTline >= syl2[rand][sylNum].to_i
-        tline = tline + syl2[rand][0].to_s + " "
-        rSylTline = rSylTline - syl2[rand][sylNum].to_i
-    end
-    rand = rand(0..syl.length)
+    puts fline.capitalize()
+    puts sline.capitalize()
+    puts tline.capitalize()
 end
 
-=end
-
-fline = makeLine 5, syl2, syl
-sline = makeLine 7, syl2, syl
-tline = makeLine 5, syl2, syl
-
-puts fline.capitalize()
-puts sline.capitalize()
-puts tline.capitalize()
+puts "Time elapsed: #{(Time.now - beginning)/100000} seconds."
