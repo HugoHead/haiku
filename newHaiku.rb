@@ -1,30 +1,10 @@
+require 'gingerice'
 require './lib/VowlCheck.rb'
 
 beginning = Time.now
 
-class Data
-    attr_accessor :arrays, :col0, :col1, :col2, :col3 
-    def computeCols
-        self.col0 = data.map {|row| row[0]}.to_a
-        self.col1 = data.map {|row| row[1]}.to_a
-        self.col2 = data.map {|row| row[2]}.to_a
-        self.col3 = data.map {|row| row[3]}.to_a
-    end
-    def initialize
-        syl = File.open("finalData.txt", "r")#copies the File syl.txt to the var syl
-        syl = syl.each_line.to_a#makes syl an array
-        runner = 0
-        syl2 = Array.new
-        while runner < syl.length do#repeat until nothing left in syl
-            syl2[runner] = syl[runner].split("\t")#makes each index of syl2 and array of [word, syl_count]
-            runner = runner + 1
-        end
 
-        self.arrays = syl2
-
-        computeCols
-    end
-end
+$grammerCheck = (ARGV[0] == "--raw")
 
 def findSylCount word
     return $sylsLookupTable[word].to_i
@@ -63,7 +43,6 @@ def wordPlacement line, data, sylLeft
         #the exeption is of cource adjectives and adverbs 
         #e.g. "stupid stupid old man", "very very big ball"
         if (thisWord == prevWord) && (thisWordPrt != "Adj" || thisWordPrt != "Adv")
-            puts "DOUBLE WORD INSTANCE REMOVED"
             return false
         end
         ##############################################################################
@@ -124,8 +103,6 @@ def drawWord
     #randomly pick a word. Weighted on frequency.
     value = $listOfWordsWeightedOnFrequency.sample#Note that this function will return an int
     return value
-
-    puts "err: drawWord escaped"
 end
 
 def makeLine syls, syl2, syl
@@ -173,6 +150,13 @@ def makeLine syls, syl2, syl
         #tweak the line for minor rules
         line = minorCorrection line
     end
+    text = line
+    if !$grammerCheck
+        parser = Gingerice::Parser.new
+        g = parser.parse text
+        line = g["result"]
+    end
+
     #There my be an extra " " at the end of the line. Get that outta there.
     return line.chomp(" ") + "."#<-- punctutation is integral to human comminication.
 end
@@ -213,8 +197,8 @@ end
 $sylsLookupTable = Hash[$col[0].zip($col[3])]
 #############################################
 
-beginning = Time.now
-100000.times do 
+count = 1
+count.times do
     fline = makeLine 5, syl2, syl
     sline = makeLine 7, syl2, syl
     tline = makeLine 5, syl2, syl
@@ -224,4 +208,4 @@ beginning = Time.now
     puts tline.capitalize()
 end
 
-puts "Time elapsed: #{(Time.now - beginning)/100000} seconds."
+puts "Ran for #{(Time.now - beginning)/count} seconds."
