@@ -1,6 +1,6 @@
 # haiku
 This program makes haikus.
-If gingerice is the only dependacy.
+Gingerice is the only dependacy.
 
 to install it:
 
